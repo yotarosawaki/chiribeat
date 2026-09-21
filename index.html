@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ちりビート 中1地理</title>
+<style>
+:root{
+  --bg1:#0b1026; --bg2:#1d1250; --ink:#eef1ff; --sub:#9aa5d6;
+  --accent:#4dd0e1; --ok:#69db7c; --ng:#ff6b6b; --card:rgba(255,255,255,.08);
+  --l0:#4dabf7; --l1:#69db7c; --l2:#ffd43b; --l3:#ff8787;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:linear-gradient(160deg,var(--bg1),var(--bg2));color:var(--ink);
+  font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif;overflow:hidden;
+  user-select:none;-webkit-user-select:none}
+#app{height:100dvh;max-width:520px;margin:0 auto;position:relative}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;padding:16px}
+.screen.active{display:flex}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* title */
+#title{align-items:center;justify-content:center;text-align:center;gap:12px;overflow-y:auto}
+#title h1{margin:0;font-size:clamp(34px,10vw,52px);letter-spacing:.04em;
+  background:linear-gradient(90deg,var(--l0),var(--l1),var(--l2),var(--l3));-webkit-background-clip:text;background-clip:text;color:transparent}
+#title .lead{margin:0;color:var(--sub);font-size:14px;line-height:1.7}
+.group{width:100%}
+.group h3{margin:0 0 6px;font-size:13px;color:var(--sub);font-weight:600;text-align:left}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--card);border:1.5px solid transparent;border-radius:999px;padding:7px 13px;font-size:14px}
+.chip.sel{border-color:var(--accent);background:rgba(77,208,225,.18);color:#fff}
+.big{background:linear-gradient(90deg,#4dabf7,#7950f2);border:0;border-radius:14px;padding:14px 40px;font-size:20px;font-weight:700;
+  box-shadow:0 6px 24px rgba(121,80,242,.45)}
+.big:active{transform:scale(.97)}
+.ghost{background:var(--card);border:0;border-radius:12px;padding:12px 22px;font-size:16px}
+.howto{background:var(--card);border-radius:12px;padding:10px 14px;font-size:13px;line-height:1.7;text-align:left;color:#dfe4ff}
+#best{font-size:13px;color:var(--sub)}
+
+/* game */
+#game{padding:0}
+#hud{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px;font-size:14px;gap:8px}
+#hud b{font-size:18px;font-variant-numeric:tabular-nums}
+#combo{color:var(--l2);min-width:88px;text-align:center}
+#quit{background:var(--card);border:0;border-radius:8px;padding:4px 10px;font-size:12px;color:var(--sub)}
+#mute{background:var(--card);border:0;border-radius:8px;padding:4px 8px;font-size:14px}
+#qbox{margin:2px 12px 0;background:var(--card);border-radius:14px;padding:8px 14px;min-height:68px;border-left:5px solid var(--accent)}
+#qcat{font-size:11px;color:var(--accent);margin-bottom:2px}
+#qtext{font-size:clamp(16px,4.6vw,20px);font-weight:700;line-height:1.4}
+#slots{display:flex;justify-content:center;flex-wrap:wrap;gap:5px;margin:8px 12px 0;min-height:42px}
+#slots span{min-width:34px;height:40px;padding:0 3px;display:flex;align-items:center;justify-content:center;
+  border-bottom:3px solid rgba(255,255,255,.35);font-size:22px;font-weight:800;color:rgba(255,255,255,.35)}
+#slots span.hint{color:rgba(255,242,122,.55)}
+#slots span.ok{color:var(--ok);border-color:var(--ok)}
+#slots span.ng{color:var(--ng);border-color:var(--ng)}
+#fb{margin:4px 12px 0;min-height:34px;font-size:12px;line-height:1.4;color:var(--sub)}
+#fb.ok{color:var(--ok)} #fb.ng{color:#ffa8a8}
+#fb b{font-size:13px}
+canvas{flex:1;min-height:0;width:100%;display:block;touch-action:none}
+
+/* result */
+#result{overflow-y:auto;align-items:center;gap:10px;text-align:center}
+#rank{font-size:84px;font-weight:900;line-height:1;margin-top:6px;
+  background:linear-gradient(180deg,#fff27a,#ff9f43);-webkit-background-clip:text;background-clip:text;color:transparent}
+#rmsg{font-size:16px;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.stat{background:var(--card);border-radius:12px;padding:8px 4px}
+.stat span{display:block;font-size:11px;color:var(--sub)}
+.stat b{font-size:20px;font-variant-numeric:tabular-nums}
+#review{width:100%;text-align:left}
+#review h3{margin:8px 0 6px;font-size:14px;color:var(--sub)}
+.miss{background:var(--card);border-left:4px solid var(--ng);border-radius:10px;padding:8px 12px;margin-bottom:8px;font-size:13px;line-height:1.55}
+.miss .a{color:var(--ok);font-weight:700;font-size:15px}
+.miss small{color:var(--sub)}
+.row{display:flex;gap:10px;margin:6px 0 14px;flex-wrap:wrap;justify-content:center}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="title" class="screen active">
+    <h1>ちりビート</h1>
+    <p class="lead">答えをリズムに乗せて、1文字ずつたたく。<br>中学1年 地理のキーワードを、耳と指で覚えよう！</p>
+
+    <div class="group"><h3>ジャンル</h3><div class="chips" id="optCat"></div></div>
+    <div class="group"><h3>ヒント</h3>
+      <div class="chips" id="optHint">
+        <button class="chip sel" data-v="1">あり（お手本を見ながら覚える）</button>
+        <button class="chip" data-v="0">なし（思い出して押す）</button>
+      </div></div>
+    <div class="group"><h3>スピード</h3>
+      <div class="chips" id="optBpm">
+        <button class="chip" data-v="80">ゆっくり</button>
+        <button class="chip sel" data-v="100">ふつう</button>
+        <button class="chip" data-v="120">はやい</button>
+      </div></div>
+    <div class="group"><h3>問題数</h3>
+      <div class="chips" id="optN">
+        <button class="chip" data-v="5">5問</button>
+        <button class="chip sel" data-v="10">10問</button>
+        <button class="chip" data-v="15">15問</button>
+      </div></div>
+
+    <div class="howto">
+      🎵 問題が出たら、<b>答えの文字が1拍ずつ</b>落ちてきます。<br>
+      4つのレーンのうち<b>正しい文字</b>を、ラインに重なる瞬間にたたこう！<br>
+      例）与那国島 → <b>よ・な・ぐ・に・じ・ま</b><br>
+      操作：<b>D F J K</b>（または 1 2 3 4）／ スマホはレーンをタップ
+    </div>
+    <button class="big" id="start">スタート</button>
+    <div id="best"></div>
+  </section>
+
+  <section id="game" class="screen">
+    <div id="hud">
+      <div>SCORE <b id="score">0</b></div>
+      <div id="combo"></div>
+      <div>Q <b id="prog">1/10</b></div>
+      <button id="mute" title="音">🔊</button>
+      <button id="quit">やめる</button>
+    </div>
+    <div id="qbox"><div id="qcat"></div><div id="qtext"></div></div>
+    <div id="slots"></div>
+    <div id="fb"></div>
+    <canvas id="cv"></canvas>
+  </section>
+
+  <section id="result" class="screen">
+    <div id="rank">A</div>
+    <div id="rmsg"></div>
+    <div class="stats">
+      <div class="stat"><span>スコア</span><b id="rScore">0</b></div>
+      <div class="stat"><span>正解率</span><b id="rAcc">0%</b></div>
+      <div class="stat"><span>最大コンボ</span><b id="rCombo">0</b></div>
+    </div>
+    <div id="review"></div>
+    <div class="row">
+      <button class="big" id="again">もう一度</button>
+      <button class="ghost" id="retryMiss">まちがえた問題だけ</button>
+      <button class="ghost" id="toTitle">タイトルへ</button>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+/* ============ 問題データ [ジャンル, 問題, 答え(表示), 読み, 解説] ============ */
+const CATS = {world:'世界のすがた', latlon:'緯度・経度と時差', japan:'日本のすがた', land:'日本の地形と気候', pref:'都道府県'};
+const QS = [
+ // 世界のすがた
+ ['world','六大陸のうち、最も面積が広い大陸は？','ユーラシア大陸','ユーラシア','ユーラシア大陸は世界の陸地の約3分の1を占めます。'],
+ ['world','三大洋のうち、最も広い海洋は？','太平洋','たいへいよう','三大洋は太平洋・大西洋・インド洋です。'],
+ ['world','大陸ではない、世界最大の島は？','グリーンランド','グリーンランド','六大陸にはふくまれません。'],
+ ['world','オーストラリアやニュージーランドがふくまれる州は？','オセアニア州','オセアニア','世界は6つの州に分けられます。'],
+ ['world','世界で最も面積が大きい国は？','ロシア連邦','ロシア','日本の約45倍の面積があります。'],
+ ['world','世界で最も面積が小さい国は？','バチカン市国','バチカン','イタリアのローマ市内にあります。'],
+ ['world','アルプスの山あいにある、海に面していない国は？','スイス','スイス','ヨーロッパの内陸国です。'],
+ ['world','世界で最も高い山は？','エベレスト山','エベレスト','標高は約8848m。'],
+ ['world','エベレストがある、世界一高い山脈は？','ヒマラヤ山脈','ヒマラヤ','アルプス・ヒマラヤ造山帯に属します。'],
+ ['world','アフリカ北部に広がる、世界最大級の砂漠は？','サハラ砂漠','サハラ','アフリカ大陸の北部に広がっています。'],
+ ['world','アフリカ大陸を流れる、世界最長級の川は？','ナイル川','ナイル','エジプトを流れて地中海に注ぎます。'],
+ ['world','南アメリカを流れる、流域面積が世界最大の川は？','アマゾン川','アマゾン','熱帯雨林（セルバ）の中を流れます。'],
+ ['world','緯線と経線が直角に交わる、航海図に使われる図法は？','メルカトル図法','メルカトル','高緯度ほど面積が大きく表されます。'],
+ ['world','赤道が通る大陸は？（ヨーロッパ・北アメリカ・オーストラリアは通らない）','アフリカ大陸','アフリカ','赤道はアフリカ・南アメリカ・東南アジアを通ります。'],
+ // 緯度・経度と時差
+ ['latlon','緯度0度の線を何という？','赤道','せきどう','赤道より北が北緯、南が南緯です。'],
+ ['latlon','経度0度の線を何という？','本初子午線','ほんしょしごせん','ここより東が東経、西が西経です。'],
+ ['latlon','本初子午線が通る、イギリスの首都は？','ロンドン','ロンドン','旧グリニッジ天文台を通ります。'],
+ ['latlon','日本の標準時の基準・東経135度が通る、兵庫県の市は？','明石市','あかしし','日本とロンドンの時差は9時間です。'],
+ // 日本のすがた
+ ['japan','日本の最北端の島は？','択捉島','えとろふとう','北方領土の島で、北海道の北東にあります。'],
+ ['japan','日本の最東端の島は？','南鳥島','みなみとりしま','東京都に属する小さな島です。'],
+ ['japan','日本の最西端の島は？','与那国島','よなぐにじま','沖縄県にあり、台湾に近い島です。'],
+ ['japan','日本の最南端の島は？','沖ノ鳥島','おきのとりしま','東京都に属します。'],
+ ['japan','沖縄県に属する、日本固有の領土の島々は？','尖閣諸島','せんかくしょとう','沖縄県石垣市に属します。'],
+ ['japan','島根県に属する、日本固有の領土の島は？','竹島','たけしま','日本海にある島です。'],
+ ['japan','2府のうち、京都府ともう1つは？','大阪府','おおさかふ','1都は東京都、1道は北海道です。'],
+ ['japan','日本の首都で、人口が最も多い都道府県は？','東京都','とうきょうと','日本の政治・経済の中心です。'],
+ // 日本の地形と気候
+ ['land','日本で一番高い山は？','富士山','ふじさん','標高3776m。山梨県と静岡県にまたがります。'],
+ ['land','日本で最も長い川は？','信濃川','しなのがわ','全長367km。長野県では千曲川といいます。'],
+ ['land','日本で最も広い湖は？','琵琶湖','びわこ','滋賀県にあります。'],
+ ['land','飛騨・木曽・赤石山脈をまとめて何という？','日本アルプス','にほんアルプス','本州中央部にある険しい山脈です。'],
+ ['land','川が山地から平地に出るところにできる、扇形の地形は？','扇状地','せんじょうち','水はけがよく、果樹園に利用されます。'],
+ ['land','川が河口付近に土砂を積もらせてできる地形は？','三角州','さんかくす','平らで水が得やすく、水田に向きます。'],
+ ['land','三陸海岸などに見られる、入り組んだ海岸は？','リアス海岸','リアスかいがん','波がおだやかで、養殖業に向いています。'],
+ ['land','日本の太平洋側を北上する暖流は？','黒潮','くろしお','日本海流ともいいます。'],
+ ['land','日本の太平洋側を南下する寒流は？','親潮','おやしお','千島海流ともいいます。黒潮とぶつかる潮目は好漁場です。'],
+ ['land','夏は南東から、冬は北西から吹く風は？','季節風','きせつふう','冬は日本海側に雪を降らせます。'],
+ ['land','日本の大部分が属する気候帯は？','温帯','おんたい','北海道は冷帯（亜寒帯）です。'],
+ ['land','一年中暑く、赤道付近に広がる気候帯は？','熱帯','ねったい','雨が多く、熱帯雨林が広がります。'],
+ ['land','降水量が少なく、砂漠が広がる気候帯は？','乾燥帯','かんそうたい','サハラ砂漠などがこの気候帯です。'],
+ ['land','北極・南極周辺の、一年中寒い気候帯は？','寒帯','かんたい','氷におおわれた地域です。'],
+ // 都道府県
+ ['pref','日本で最も面積が広い都道府県は？','北海道','ほっかいどう','2位は岩手県です。'],
+ ['pref','日本で最も面積が小さい都道府県は？','香川県','かがわけん','「うどん県」としても有名です。'],
+ ['pref','海に面していない県（内陸県）はどれ？（ヒント：日本アルプスがある）','長野県','ながのけん','内陸県は栃木・群馬・埼玉・山梨・長野・岐阜・滋賀・奈良の8県です。'],
+ ['pref','愛知県の県庁所在地は？','名古屋市','なごやし','県名と県庁所在地名がちがう県です。'],
+ ['pref','宮城県の県庁所在地は？','仙台市','せんだいし','東北地方の中心都市です。'],
+ ['pref','石川県の県庁所在地は？','金沢市','かなざわし','兼六園で有名です。'],
+ ['pref','香川県の県庁所在地は？','高松市','たかまつし','四国地方の県です。'],
+ ['pref','愛媛県の県庁所在地は？','松山市','まつやまし','道後温泉で有名です。'],
+ ['pref','沖縄県の県庁所在地は？','那覇市','なはし','沖縄本島の南部にあります。'],
+ ['pref','島根県の県庁所在地は？','松江市','まつえし','中国地方の県です。'],
+ ['pref','岩手県の県庁所在地は？','盛岡市','もりおかし','東北地方の県です。'],
+ ['pref','兵庫県の県庁所在地は？','神戸市','こうべし','県名と県庁所在地名がちがう県です。'],
+ ['pref','茨城県の県庁所在地は？','水戸市','みとし','関東地方の県です。'],
+ ['pref','栃木県の県庁所在地は？','宇都宮市','うつのみやし','餃子で有名です。'],
+ ['pref','神奈川県の県庁所在地は？','横浜市','よこはまし','県名と県庁所在地名がちがう県です。'],
+ ['pref','山梨県の県庁所在地は？','甲府市','こうふし','ぶどうやももの産地です。'],
+];
+
+/* ============ 設定・状態 ============ */
+const LANE_COLORS = ['#4dabf7','#69db7c','#ffd43b','#ff8787'];
+const KEYS = ['D','F','J','K'];
+const FONT = '"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif';
+const opt = {cat:'all', bpm:100, n:10, hint:1};
+let ac, master, muted=false, noiseBuf;
+let running=false, qs=[], rows=[], start=0, beat=0, fall=0, winR=0.3, endAt=0;
+let score=0, combo=0, maxCombo=0, totalRows=0, okRows=0, mistakes=[], curIdx=-1, slotsQ=null;
+let musicTimer=null, step=0, nextT=0, lastPool=null;
+let judgeFx=null, padFlash=[-9,-9,-9,-9], bursts=[];
+
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+let W=0,H=0;
+
+/* ============ かな処理 ============ */
+function morae(s){
+  const r=[];
+  for(const ch of s){
+    if(/[ゃゅょャュョぁぃぅぇぉァィゥェォー]/.test(ch) && r.length) r[r.length-1]+=ch; else r.push(ch);
+  }
+  return r;
+}
+const HIRA = 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわんがぎぐげござじずぜぞだづでどばびぶべぼ';
+const KATA = [...HIRA].map(c=>String.fromCharCode(c.charCodeAt(0)+0x60)).join('');
+const isKata = ch => /[゠-ヿ]/.test(ch[0]);
+function decoys(correct, n){
+  const base = [...(isKata(correct)?KATA:HIRA)].filter(c=>c!==correct && c!==correct[0]);
+  // 同じ種類（拗音・長音つき）の文字は、答えのモーラから借りる
+  const special = correct.length>1;
+  const pool = special ? [] : base;
+  if(special){
+    for(const q of QS) for(const m of morae(q[3])) if(m.length>1 && isKata(m)===isKata(correct) && m!==correct) pool.push(m);
+    const p=[...new Set(pool)]; if(p.length>=n) return shuffle(p).slice(0,n);
+    return shuffle(base).slice(0,n);
+  }
+  return shuffle(base).slice(0,n);
+}
+
+/* ============ タイトル画面 ============ */
+(function initTitle(){
+  const catBox = $('optCat');
+  const mk = (v,label,sel) => {
+    const b=document.createElement('button'); b.className='chip'+(sel?' sel':''); b.dataset.v=v; b.textContent=label; catBox.appendChild(b);
+  };
+  mk('all','ぜんぶ',true);
+  for (const k in CATS) mk(k, CATS[k]);
+  const bind = (box,key,conv) => box.addEventListener('click',e=>{
+    const b=e.target.closest('.chip'); if(!b) return;
+    box.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel')); b.classList.add('sel');
+    opt[key]=conv(b.dataset.v);
+  });
+  bind(catBox,'cat',v=>v); bind($('optBpm'),'bpm',Number); bind($('optN'),'n',Number); bind($('optHint'),'hint',Number);
+  showBest();
+})();
+function showBest(){
+  let b=0; try{ b=+localStorage.getItem('chiribeat_best2')||0; }catch(e){}
+  $('best').textContent = b? `ベストスコア：${b}` : '';
+}
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id===id)); }
+
+/* ============ 音 ============ */
+function initAudio(){
+  if(!ac){
+    ac = new (window.AudioContext||window.webkitAudioContext)();
+    master = ac.createGain(); master.gain.value = muted?0:0.55; master.connect(ac.destination);
+    const len = ac.sampleRate*0.5; noiseBuf = ac.createBuffer(1,len,ac.sampleRate);
+    const d=noiseBuf.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+  }
+  if(ac.state==='suspended') ac.resume();
+}
+function tone(t,freq,dur,type,vol){
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t+dur+0.05);
+}
+function kick(t){
+  const o=ac.createOscillator(), g=ac.createGain();
+  o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(45,t+0.12);
+  g.gain.setValueAtTime(0.9,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t+0.2);
+}
+function noise(t,dur,vol,type,freq){
+  const s=ac.createBufferSource(); s.buffer=noiseBuf;
+  const f=ac.createBiquadFilter(); f.type=type; f.frequency.value=freq;
+  const g=ac.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  s.connect(f); f.connect(g); g.connect(master); s.start(t,Math.random()*0.3); s.stop(t+dur+0.02);
+}
+const BASS  = [130.81,110,87.31,98];
+const CHORD = [[261.63,329.63,392],[220,261.63,329.63],[174.61,220,261.63],[196,246.94,293.66]];
+const ARP   = [0,1,2,1,0,2,1,2];
+function playStep(s,t){
+  const beatN = s>>1, on = (s&1)===0, bar = beatN>>2, inBar = beatN&3, ch = bar&3;
+  if(on){
+    kick(t);
+    if(inBar===1||inBar===3) noise(t,0.13,0.28,'bandpass',1800);
+    tone(t,BASS[ch],beat*0.9,'triangle',0.32);
+  } else noise(t,0.04,0.12,'highpass',7000);
+  if(bar>=1){
+    tone(t,CHORD[ch][ARP[s%8]]*(bar%4===3&&!on?2:1),beat*0.45,'triangle',0.09);
+    if(on && inBar===0) tone(t,CHORD[ch][0]*2,beat*1.6,'sine',0.05);
+  }
+}
+function startMusic(t0){
+  step=0; nextT=t0;
+  musicTimer=setInterval(()=>{ while(nextT < ac.currentTime+0.15){ playStep(step,nextT); step++; nextT+=beat/2; } },25);
+}
+function stopMusic(){ clearInterval(musicTimer); musicTimer=null; }
+function seOk(g){
+  const t=ac.currentTime, hi = g==='perfect'?1.25:1;
+  tone(t,880*hi,0.16,'sine',0.35); tone(t+0.06,1320*hi,0.24,'sine',0.3);
+}
+function seNg(){
+  const t=ac.currentTime, o=ac.createOscillator(), g=ac.createGain(); o.type='sawtooth';
+  o.frequency.setValueAtTime(190,t); o.frequency.exponentialRampToValueAtTime(90,t+0.3);
+  g.gain.setValueAtTime(0.22,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.32);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t+0.35);
+}
+$('mute').onclick=()=>{ muted=!muted; $('mute').textContent=muted?'🔇':'🔊'; if(master) master.gain.value=muted?0:0.55; };
+
+/* ============ ゲーム進行 ============ */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function startGame(pool){
+  initAudio();
+  if(!pool){
+    pool = QS.filter(q=>opt.cat==='all'||q[0]===opt.cat).slice();
+    shuffle(pool); pool = pool.slice(0,opt.n);
+  }
+  lastPool = pool;
+  beat = 60/opt.bpm; fall = beat*4; winR = Math.min(0.3, beat*0.5);
+  start = ac.currentTime + 1.2;
+  qs=[]; rows=[];
+  let T = start + 4*beat;                       // 最初の1文字目がラインに届く時刻
+  for(const d of pool){
+    const mor = morae(d[3]);
+    const q = {cat:d[0], text:d[1], display:d[2], reading:d[3], exp:d[4], mor, T, spawn:T-fall, rows:[], miss:false};
+    mor.forEach((ch,i)=>{
+      const others = decoys(ch,3), correct = Math.floor(Math.random()*4);
+      const tiles = others.slice(); tiles.splice(correct,0,ch);
+      const r = {q, i, ch, tiles, correct, hit:T+i*beat, done:false, pick:-2, doneAt:0, result:null};
+      q.rows.push(r); rows.push(r);
+    });
+    qs.push(q);
+    T += (mor.length+4)*beat;
+  }
+  endAt = rows[rows.length-1].hit + 1.5;
+  score=0; combo=0; maxCombo=0; okRows=0; totalRows=rows.length; mistakes=[]; curIdx=-1; slotsQ=null;
+  judgeFx=null; bursts=[]; padFlash=[-9,-9,-9,-9];
+  $('fb').textContent=''; $('fb').className=''; $('slots').innerHTML='';
+  $('score').textContent='0'; $('combo').textContent='';
+  showScreen('game'); resize();
+  master.gain.cancelScheduledValues(ac.currentTime); master.gain.value=muted?0:0.55;
+  startMusic(start);
+  running=true; requestAnimationFrame(frame);
+}
+function quitGame(){ running=false; stopMusic(); showScreen('title'); showBest(); }
+$('start').onclick=()=>startGame();
+$('quit').onclick=quitGame;
+$('again').onclick=()=>startGame();
+$('retryMiss').onclick=()=>startGame(mistakes.map(q=>QS.find(d=>d[2]===q.display && d[3]===q.reading)));
+$('toTitle').onclick=quitGame;
+
+function updateHud(){
+  $('score').textContent = score;
+  $('combo').textContent = combo>=2 ? `${combo} COMBO` : '';
+}
+function renderSlots(q){
+  slotsQ=q; const box=$('slots'); box.innerHTML='';
+  q.rows.forEach(r=>{
+    const s=document.createElement('span');
+    if(r.done){ s.textContent=r.ch; s.className=r.result==='ok'?'ok':'ng'; }
+    else if(opt.hint){ s.textContent=r.ch; s.className='hint'; }
+    else s.textContent='○';
+    box.appendChild(s);
+  });
+}
+function resolveRow(r, lane, now){
+  r.done=true; r.doneAt=now; r.pick=lane; padFlash[lane>=0?lane:0]=lane>=0?now:padFlash[0];
+  const okHit = lane===r.correct;
+  if(okHit){
+    const adt=Math.abs(now-r.hit), g = adt<=0.08?'perfect':adt<=0.16?'great':'good';
+    okRows++; combo++; maxCombo=Math.max(maxCombo,combo);
+    score += {perfect:1000,great:700,good:400}[g] + Math.min(combo,10)*30;
+    r.result='ok';
+    judgeFx={t:now,text:g.toUpperCase()+'!',color:{perfect:'#fff27a',great:'#69db7c',good:'#4dd0e1'}[g]};
+    bursts.push({lane,t:now,color:'#fff'}); seOk(g);
+  } else {
+    combo=0; r.result='ng'; r.q.miss=true;
+    judgeFx={t:now,text:lane<0?'TIME UP':'MISS…',color:'#ff6b6b'};
+    if(lane>=0) bursts.push({lane,t:now,color:'#ff6b6b'});
+    seNg();
+  }
+  if(slotsQ===r.q) renderSlots(r.q);
+  if(r.q.rows.every(x=>x.done)){
+    const q=r.q;
+    if(!q.miss) score+=500; else mistakes.push(q);
+    const fb=$('fb'); fb.className=q.miss?'ng':'ok';
+    fb.innerHTML=`${q.miss?'📝':'⭕'} <b>${q.display}</b>（${q.reading}）<br>${q.exp}`;
+  }
+  updateHud();
+}
+function judge(lane, now){
+  padFlash[lane]=now;
+  let best=null, bd=9;
+  for(const r of rows){ if(r.done) continue; const d=Math.abs(now-r.hit); if(d<=winR && d<bd){best=r;bd=d;} }
+  if(best) resolveRow(best,lane,now);
+}
+
+function finish(){
+  running=false; stopMusic();
+  const acc=Math.round(okRows/totalRows*100);
+  let best=0; try{ best=+localStorage.getItem('chiribeat_best2')||0; if(score>best){localStorage.setItem('chiribeat_best2',score);} }catch(e){}
+  const rank = acc===100?'S':acc>=90?'A':acc>=70?'B':'C';
+  $('rank').textContent=rank;
+  $('rmsg').textContent = {S:'全問ノーミス！ぜんぶ覚えたね🎉',A:'すごい！ほぼ完ぺき！',B:'いい調子！復習してもう一回！',C:'まずは「ヒントあり」で覚えよう！'}[rank];
+  $('rScore').textContent=score; $('rAcc').textContent=acc+'%'; $('rCombo').textContent=maxCombo;
+  const rv=$('review');
+  rv.innerHTML = mistakes.length ? '<h3>📝 まちがえた問題の復習</h3>' : '';
+  for(const q of mistakes){
+    const d=document.createElement('div'); d.className='miss';
+    const b=document.createElement('b'); b.textContent=q.text;
+    const a=document.createElement('div'); a.innerHTML='答え： <span class="a"></span>'; a.querySelector('.a').textContent=`${q.display}（${q.reading}）`;
+    const s=document.createElement('small'); s.textContent=q.exp;
+    d.append(b,a,s); rv.appendChild(d);
+  }
+  $('retryMiss').style.display = mistakes.length?'':'none';
+  showScreen('result'); $('result').scrollTop=0;
+}
+
+/* ============ 入力 ============ */
+const KEYMAP={KeyD:0,KeyF:1,KeyJ:2,KeyK:3,Digit1:0,Digit2:1,Digit3:2,Digit4:3,Numpad1:0,Numpad2:1,Numpad3:2,Numpad4:3};
+addEventListener('keydown',e=>{
+  if(!running||e.repeat) return;
+  const l=KEYMAP[e.code]; if(l===undefined) return;
+  e.preventDefault(); judge(l, ac.currentTime);
+});
+cv.addEventListener('pointerdown',e=>{
+  if(!running) return; e.preventDefault();
+  const r=cv.getBoundingClientRect();
+  judge(Math.max(0,Math.min(3,Math.floor((e.clientX-r.left)/r.width*4))), ac.currentTime);
+});
+
+/* ============ 描画 ============ */
+function resize(){
+  const dpr=window.devicePixelRatio||1, r=cv.getBoundingClientRect();
+  W=r.width; H=r.height; cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener('resize',()=>{ if(running) resize(); });
+function rrect(x,y,w,h,r){
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+
+function frame(){
+  if(!running) return;
+  const now=ac.currentTime;
+  for(const r of rows) if(!r.done && now>r.hit+winR) resolveRow(r,-1,now);
+
+  let idx=0; for(let k=0;k<qs.length;k++) if(qs[k].spawn<=now) idx=k;
+  if(idx!==curIdx){
+    curIdx=idx; const q=qs[idx];
+    $('qcat').textContent=CATS[q.cat]; $('qtext').textContent=q.text;
+    $('prog').textContent=`${idx+1}/${qs.length}`; renderSlots(q);
+  }
+  if(now>endAt){ finish(); return; }
+  draw(now);
+  requestAnimationFrame(frame);
+}
+
+function draw(now){
+  ctx.clearRect(0,0,W,H);
+  const laneW=W/4, lineY=H*0.78, TH=Math.max(46,Math.min(64,H*0.11));
+  const bp=(now-start)/beat, pulse = bp<0?0:1-(bp-Math.floor(bp));
+
+  for(let i=0;i<4;i++){ ctx.fillStyle = i%2?'rgba(255,255,255,.035)':'rgba(255,255,255,.06)'; ctx.fillRect(i*laneW,0,laneW,H); }
+  ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1;
+  for(let i=1;i<4;i++){ ctx.beginPath(); ctx.moveTo(i*laneW,0); ctx.lineTo(i*laneW,H); ctx.stroke(); }
+
+  for(let i=0;i<4;i++){
+    const f=Math.max(0,1-(now-padFlash[i])/0.25);
+    const g=ctx.createLinearGradient(0,lineY,0,H);
+    g.addColorStop(0,LANE_COLORS[i]+(f>0?'cc':'44')); g.addColorStop(1,LANE_COLORS[i]+'11');
+    ctx.fillStyle=g; ctx.fillRect(i*laneW+2,lineY,laneW-4,H-lineY);
+    ctx.fillStyle='rgba(255,255,255,'+(0.55+f*0.45)+')';
+    ctx.font=`800 ${Math.min(24,laneW*0.28)}px ${FONT}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(KEYS[i], i*laneW+laneW/2, lineY+(H-lineY)*0.5);
+  }
+  ctx.save(); ctx.shadowColor='#fff'; ctx.shadowBlur=8+pulse*18;
+  ctx.fillStyle=`rgba(255,255,255,${0.65+pulse*0.35})`; ctx.fillRect(0,lineY-2,W,4); ctx.restore();
+
+  // 文字ノーツ（1拍に1行）
+  for(const r of rows){
+    if(now<r.hit-fall-0.3 || now>r.hit+1.0) continue;
+    const frac=1-(r.hit-now)/fall;
+    const y=-TH/2+(lineY+TH/2)*frac;
+    for(let j=0;j<4;j++){
+      const x=j*laneW+5, w=laneW-10, top=y-TH/2;
+      let alpha=1, glow=null, outline=null;
+      if(r.done){
+        const t=now-r.doneAt;
+        if(j===r.pick && r.result==='ok') continue;
+        if(j===r.correct){ glow='#69db7c'; outline='#69db7c'; }
+        else if(j===r.pick){ glow='#ff6b6b'; outline='#ff6b6b'; alpha=Math.max(.2,1-t*1.5); }
+        else alpha=Math.max(.1,1-t*3);
+        if(t>0.6) alpha*=Math.max(0,1-(t-0.6)/0.2);
+      } else if(opt.hint && j===r.correct){ glow='#ffd43b'; outline='#ffd43b'; }
+      ctx.save(); ctx.globalAlpha=alpha;
+      if(glow){ ctx.shadowColor=glow; ctx.shadowBlur=14; }
+      rrect(x,top,w,TH,12);
+      const g=ctx.createLinearGradient(0,top,0,top+TH);
+      g.addColorStop(0,'#ffffff'); g.addColorStop(1,LANE_COLORS[j]);
+      ctx.fillStyle=g; ctx.fill();
+      ctx.shadowBlur=0; ctx.lineWidth=outline?4:2; ctx.strokeStyle=outline||'rgba(255,255,255,.7)'; ctx.stroke();
+      const ch=r.tiles[j];
+      ctx.fillStyle='#14184a'; ctx.font=`800 ${ch.length>1?Math.min(26,w*0.36):Math.min(34,w*0.5)}px ${FONT}`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(ch, j*laneW+laneW/2, y+1);
+      ctx.restore();
+    }
+  }
+
+  bursts=bursts.filter(b=>now-b.t<0.4);
+  for(const b of bursts){
+    const t=(now-b.t)/0.4, cx=b.lane*laneW+laneW/2;
+    ctx.save(); ctx.globalAlpha=1-t; ctx.strokeStyle=b.color; ctx.lineWidth=5*(1-t)+1;
+    ctx.beginPath(); ctx.arc(cx,lineY,10+t*laneW*0.7,0,Math.PI*2); ctx.stroke(); ctx.restore();
+  }
+  if(judgeFx){
+    const t=now-judgeFx.t;
+    if(t<0.6){
+      ctx.save(); ctx.globalAlpha=Math.min(1,(0.6-t)*4); ctx.fillStyle=judgeFx.color;
+      ctx.font=`900 ${Math.min(34,W*0.08)}px ${FONT}`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=8;
+      ctx.fillText(judgeFx.text,W/2,lineY-TH-20-t*10); ctx.restore();
+    }
+  }
+  if(now<start+beat){
+    ctx.fillStyle='rgba(255,255,255,.9)'; ctx.font=`800 ${Math.min(34,W*0.08)}px ${FONT}`;
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('READY…',W/2,H*0.35);
+  }
+}
+</script>
+</body>
+</html>
