@@ -70,6 +70,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 #combo{color:var(--l2);min-width:88px;text-align:center}
 #quit{background:var(--card);border:0;border-radius:8px;padding:4px 10px;font-size:12px;color:var(--sub)}
 #mute{background:var(--card);border:0;border-radius:8px;padding:4px 8px;font-size:14px}
+#ytUnlock{display:none;background:#fff27a;color:#3a2b45;border:0;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700}
 #qbox{margin:2px 12px 0;background:var(--card);border-radius:14px;padding:8px 14px;min-height:68px;border-left:5px solid var(--accent)}
 #qcat{font-size:11px;color:var(--accent);margin-bottom:2px}
 #qtext{font-size:clamp(16px,4.6vw,20px);font-weight:700;line-height:1.4}
@@ -158,6 +159,7 @@ canvas{flex:1;min-height:0;width:100%;display:block;touch-action:none}
       <div id="combo"></div>
       <div>Q <b id="prog">1/10</b></div>
       <button id="mute" title="音">🔊</button>
+      <button id="ytUnlock" title="音を再生">🔈 音を再生</button>
       <button id="quit">やめる</button>
     </div>
     <div id="qbox"><div id="qcat"></div><div id="qtext"></div></div>
@@ -489,10 +491,11 @@ function ensureYT(){
 }
 function createYTPlayer(){
   const host=document.createElement('div'); host.id='ytHost';
-  host.style.cssText='position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;';
+  // ビューポート内・ほぼ透明に置く（画面外に置くとAndroidなどで再生が止められることがあるため）
+  host.style.cssText='position:fixed;right:0;bottom:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1;overflow:hidden;';
   document.body.appendChild(host);
   ytPlayer = new YT.Player('ytHost', {
-    height:'1', width:'1',
+    height:'2', width:'2',
     playerVars:{controls:0, disablekb:1, modestbranding:1, playsinline:1, origin:location.origin},
     events:{ onReady:()=>{ ytReady=true; } }
   });
@@ -506,6 +509,13 @@ function playYouTube(id, offset){
       muted ? ytPlayer.mute() : ytPlayer.unMute();
       ytPlayer.playVideo();
     }catch(e){}
+    // スマホのブラウザが自動再生をブロックした場合に備えて、少し待ってから確認する
+    setTimeout(()=>{
+      try{
+        const st = ytPlayer.getPlayerState();
+        if(running && st!==1 && st!==3) $('ytUnlock').style.display='inline-block';
+      }catch(e){}
+    },900);
   };
   if(ytPlayer && ytReady) go();
   else {
@@ -513,12 +523,19 @@ function playYouTube(id, offset){
     const iv=setInterval(()=>{ tries++; if(ytPlayer&&ytReady){ clearInterval(iv); go(); } else if(tries>50) clearInterval(iv); },100);
   }
 }
-function stopYouTube(){ if(ytPlayer){ try{ ytPlayer.pauseVideo(); }catch(e){} } }
+function stopYouTube(){ if(ytPlayer){ try{ ytPlayer.pauseVideo(); }catch(e){} } $('ytUnlock').style.display='none'; }
+$('ytUnlock').onclick=()=>{
+  if(!ytPlayer) return;
+  try{ muted ? ytPlayer.mute() : ytPlayer.unMute(); ytPlayer.playVideo(); }catch(e){}
+  $('ytUnlock').style.display='none';
+};
 $('ytUrl').addEventListener('input',()=>{
-  const v=$('ytUrl').value.trim(), msg=$('ytMsg');
+  const v=$('ytUrl').value.trim(), msg=$('ytMsg'), id=extractYouTubeId(v);
   if(!v){ msg.textContent=''; msg.className=''; return; }
-  if(extractYouTubeId(v)){ msg.textContent='✓ この曲でプレイします（ゲーム内蔵BGMの代わりに再生）'; msg.className='ok'; }
-  else { msg.textContent='URLを認識できませんでした。内蔵BGMで再生します。'; msg.className='ng'; }
+  if(id){
+    msg.textContent='✓ この曲でプレイします（ゲーム内蔵BGMの代わりに再生）'; msg.className='ok';
+    if(ytPlayer && ytReady){ try{ ytPlayer.cueVideoById(id); }catch(e){} } // 先読みしておき、開始時の再生をすぐ通す
+  } else { msg.textContent='URLを認識できませんでした。内蔵BGMで再生します。'; msg.className='ng'; }
 });
 
 /* ============ ゲーム進行 ============ */
@@ -555,6 +572,7 @@ function startGame(pool){
   $('fb').textContent=''; $('fb').className=''; $('slots').innerHTML='';
   $('score').textContent='0'; $('combo').textContent='';
   clearTimeout(mascotTimer); setMascotExpr(mGameSvg,'normal',false); $('mGameMsg').textContent='';
+  $('ytUnlock').style.display='none';
   showScreen('game'); resize();
   master.gain.cancelScheduledValues(ac.currentTime); master.gain.value=muted?0:0.55;
   if(ytId) playYouTube(ytId, Math.max(0, Number($('ytOffset').value)||0));
