@@ -45,6 +45,24 @@ button{font:inherit;color:inherit;cursor:pointer}
 #ytMsg.ng{color:#ffa8a8}
 #ytMsg.ok{color:var(--ok)}
 
+/* mascot */
+.mascotRow{display:flex;align-items:flex-end;gap:10px;justify-content:center;width:100%}
+.mascotSvg{width:100px;height:100px;flex:none;overflow:visible;animation:mascotBob 2.6s ease-in-out infinite}
+.mascotSvg.sm{width:42px;height:42px;animation-duration:2.1s}
+@keyframes mascotBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.mascotSvg .expr-happy,.mascotSvg .expr-sad,.mascotSvg .expr-excited,.mascotSvg .spark{display:none}
+.mascotSvg[data-expr="happy"] .expr-happy{display:block}
+.mascotSvg[data-expr="sad"] .expr-sad{display:block}
+.mascotSvg[data-expr="excited"] .expr-excited{display:block}
+.mascotSvg[data-expr="normal"] .expr-normal{display:block}
+.mascotSvg.sparkle .spark{display:block}
+.mascotBubble{background:var(--card);border-radius:14px;padding:9px 13px;font-size:12.5px;line-height:1.5;
+  max-width:230px;text-align:left;position:relative}
+.mascotBubble:after{content:'';position:absolute;left:-6px;bottom:16px;border:6px solid transparent;border-right-color:var(--card)}
+#mascotBar{display:flex;align-items:center;gap:8px;margin:4px 12px 0;min-height:36px}
+#mascotBar .mascotBubble{padding:6px 11px;font-size:12px;max-width:none;flex:1;min-height:14px}
+#mascotBar .mascotBubble:after{bottom:10px}
+
 /* game */
 #game{padding:0}
 #hud{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 4px;font-size:14px;gap:8px}
@@ -89,6 +107,11 @@ canvas{flex:1;min-height:0;width:100%;display:block;touch-action:none}
   <section id="title" class="screen active">
     <h1>ちりビート</h1>
     <p class="lead">答えをリズムに乗せて、1文字ずつたたく。<br>中学1年 地理のキーワードを、耳と指で覚えよう！</p>
+
+    <div class="mascotRow">
+      <div id="mTitleMascot"></div>
+      <div class="mascotBubble" id="mTitleMsg"></div>
+    </div>
 
     <div class="group"><h3>ジャンル</h3><div class="chips" id="optCat"></div></div>
     <div class="group"><h3>ヒント</h3>
@@ -138,6 +161,10 @@ canvas{flex:1;min-height:0;width:100%;display:block;touch-action:none}
       <button id="quit">やめる</button>
     </div>
     <div id="qbox"><div id="qcat"></div><div id="qtext"></div></div>
+    <div id="mascotBar">
+      <div id="mGameMascot"></div>
+      <div class="mascotBubble" id="mGameMsg"></div>
+    </div>
     <div id="slots"></div>
     <div id="fb"></div>
     <canvas id="cv"></canvas>
@@ -145,6 +172,10 @@ canvas{flex:1;min-height:0;width:100%;display:block;touch-action:none}
 
   <section id="result" class="screen">
     <div id="rank">A</div>
+    <div class="mascotRow">
+      <div id="mResultMascot"></div>
+      <div class="mascotBubble" id="mResultMsg"></div>
+    </div>
     <div id="rmsg"></div>
     <div class="stats">
       <div class="stat"><span>スコア</span><b id="rScore">0</b></div>
@@ -243,6 +274,90 @@ const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
 let W=0,H=0;
 
+/* ============ マスコット（オリジナルキャラ）============ */
+const M_HAIR='#4dd0e1', M_HAIRD='#2fb0c2', M_SKIN='#ffe3c9', M_INK='#3a2b45';
+function mascotMarkup(){
+  return `
+  <path d="M18,70 Q6,50 16,30 Q24,20 34,26 Q26,42 30,64 Q24,74 18,70 Z" fill="${M_HAIR}"/>
+  <path d="M102,70 Q114,50 104,30 Q96,20 86,26 Q94,42 90,64 Q96,74 102,70 Z" fill="${M_HAIR}"/>
+  <circle cx="60" cy="64" r="32" fill="${M_SKIN}"/>
+  <circle cx="29" cy="66" r="5" fill="${M_SKIN}"/>
+  <circle cx="91" cy="66" r="5" fill="${M_SKIN}"/>
+  <path d="M26,54 Q22,20 60,16 Q98,20 94,54 Q90,30 60,30 Q30,30 26,54 Z" fill="${M_HAIR}"/>
+  <path d="M28,50 Q30,26 60,24 Q90,26 92,50 Q84,34 74,42 Q68,30 60,40 Q52,30 46,42 Q36,34 28,50 Z" fill="${M_HAIRD}"/>
+  <g transform="translate(78,30)">
+    <circle r="6" fill="#fff" stroke="${M_HAIRD}" stroke-width="1.5"/>
+    <path d="M-6,0 Q0,-4 6,0 Q0,4 -6,0" fill="none" stroke="${M_HAIRD}" stroke-width="1"/>
+    <line x1="0" y1="-6" x2="0" y2="6" stroke="${M_HAIRD}" stroke-width="1"/>
+  </g>
+  <ellipse cx="40" cy="78" rx="7" ry="4.5" fill="${M_HAIR}" opacity=".65"/>
+  <ellipse cx="80" cy="78" rx="7" ry="4.5" fill="${M_HAIR}" opacity=".65"/>
+  <g class="expr-normal">
+    <circle cx="46" cy="64" r="5.2" fill="${M_INK}"/><circle cx="74" cy="64" r="5.2" fill="${M_INK}"/>
+    <circle cx="44.2" cy="61.8" r="1.6" fill="#fff"/><circle cx="72.2" cy="61.8" r="1.6" fill="#fff"/>
+    <path d="M52,80 Q60,85 68,80" stroke="${M_INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  </g>
+  <g class="expr-happy">
+    <path d="M39,64 Q46,56 53,64" stroke="${M_INK}" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <path d="M67,64 Q74,56 81,64" stroke="${M_INK}" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <path d="M48,79 Q60,90 72,79 Q60,86 48,79 Z" fill="${M_INK}"/>
+  </g>
+  <g class="expr-sad">
+    <circle cx="46" cy="66" r="4.6" fill="${M_INK}"/><circle cx="74" cy="66" r="4.6" fill="${M_INK}"/>
+    <path d="M76,71 Q79,76 76,80 Q73,76 76,71 Z" fill="#7fd6ff"/>
+    <path d="M53,82 Q60,78 67,82" stroke="${M_INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  </g>
+  <g class="expr-excited">
+    <path d="M46,57.6 L47.8,61.7 L52.4,64 L47.8,66.3 L46,70.4 L44.2,66.3 L39.6,64 L44.2,61.7 Z" fill="${M_INK}"/>
+    <path d="M74,57.6 L75.8,61.7 L80.4,64 L75.8,66.3 L74,70.4 L72.2,66.3 L67.6,64 L72.2,61.7 Z" fill="${M_INK}"/>
+    <ellipse cx="60" cy="82" rx="6" ry="7" fill="${M_INK}"/>
+  </g>
+  <g class="spark">
+    <path transform="translate(14,20)" d="M0,-6 L1.8,-1.8 L6,0 L1.8,1.8 L0,6 L-1.8,1.8 L-6,0 L-1.8,-1.8 Z" fill="#fff27a" opacity=".9"/>
+    <path transform="translate(106,26)" d="M0,-4.5 L1.35,-1.35 L4.5,0 L1.35,1.35 L0,4.5 L-1.35,1.35 L-4.5,0 L-1.35,-1.35 Z" fill="#fff27a" opacity=".8"/>
+    <path transform="translate(100,86)" d="M0,-5 L1.5,-1.5 L5,0 L1.5,1.5 L0,5 L-1.5,1.5 L-5,0 L-1.5,-1.5 Z" fill="#fff27a" opacity=".85"/>
+    <path transform="translate(16,90)" d="M0,-4 L1.2,-1.2 L4,0 L1.2,1.2 L0,4 L-1.2,1.2 L-4,0 L-1.2,-1.2 Z" fill="#fff27a" opacity=".75"/>
+  </g>`;
+}
+function makeMascot(host, size){
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 120 120');
+  svg.setAttribute('class','mascotSvg'+(size==='sm'?' sm':''));
+  svg.dataset.expr='normal';
+  svg.innerHTML=mascotMarkup();
+  host.appendChild(svg);
+  return svg;
+}
+function setMascotExpr(svg, expr, sparkle){
+  if(!svg) return;
+  svg.dataset.expr=expr; svg.classList.toggle('sparkle', !!sparkle);
+}
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const M_TITLE = ['はじめまして、チリ子だよ！いっしょに地理を覚えよう♪','地理、いっしょに楽しく覚えよう！','わたしが応援するよ、がんばって！'];
+const M_REACT = {
+  perfect:['さすが！','ばっちり！','かんぺき！'],
+  great:['いいね！','その調子！'],
+  good:['おしい、セーフ！','ナイス！'],
+  miss:['どんまい！','次いこう！','おしい…！'],
+  combo:['コンボすごい！','のってきた！']
+};
+const M_RESULT = {
+  S:'全問正解、すごすぎる！わたしも感動…！',
+  A:'ほぼ完ぺき！あと一歩だね！',
+  B:'いい調子！まちがえたところ、いっしょに復習しよ！',
+  C:'だいじょうぶ、何度でも挑戦しよう。わたしがついてるよ！'
+};
+let mTitleSvg, mGameSvg, mResultSvg, mascotTimer=null;
+function mascotReact(kind, comboNow){
+  if(!mGameSvg) return;
+  clearTimeout(mascotTimer);
+  const msg=$('mGameMsg');
+  if(kind==='miss'){ setMascotExpr(mGameSvg,'sad',false); msg.textContent=pick(M_REACT.miss); }
+  else if(kind==='perfect' && comboNow>0 && comboNow%5===0){ setMascotExpr(mGameSvg,'excited',true); msg.textContent=pick(M_REACT.combo); }
+  else { setMascotExpr(mGameSvg,'happy',kind==='perfect'); msg.textContent=pick(M_REACT[kind]||M_REACT.good); }
+  mascotTimer=setTimeout(()=>{ setMascotExpr(mGameSvg,'normal',false); msg.textContent=''; },1500);
+}
+
 /* ============ かな処理 ============ */
 function morae(s){
   const r=[];
@@ -281,6 +396,11 @@ function decoys(correct, n){
     opt[key]=conv(b.dataset.v);
   });
   bind(catBox,'cat',v=>v); bind($('optBpm'),'bpm',Number); bind($('optN'),'n',Number); bind($('optHint'),'hint',Number);
+  mTitleSvg = makeMascot($('mTitleMascot'));
+  setMascotExpr(mTitleSvg,'happy',false);
+  $('mTitleMsg').textContent = M_TITLE[0];
+  mGameSvg = makeMascot($('mGameMascot'),'sm');
+  mResultSvg = makeMascot($('mResultMascot'));
   showBest();
 })();
 function showBest(){
@@ -434,13 +554,14 @@ function startGame(pool){
   judgeFx=null; bursts=[]; padFlash=[-9,-9,-9,-9];
   $('fb').textContent=''; $('fb').className=''; $('slots').innerHTML='';
   $('score').textContent='0'; $('combo').textContent='';
+  clearTimeout(mascotTimer); setMascotExpr(mGameSvg,'normal',false); $('mGameMsg').textContent='';
   showScreen('game'); resize();
   master.gain.cancelScheduledValues(ac.currentTime); master.gain.value=muted?0:0.55;
   if(ytId) playYouTube(ytId, Math.max(0, Number($('ytOffset').value)||0));
   else startMusic(start);
   running=true; requestAnimationFrame(frame);
 }
-function quitGame(){ running=false; stopMusic(); stopYouTube(); showScreen('title'); showBest(); }
+function quitGame(){ running=false; stopMusic(); stopYouTube(); clearTimeout(mascotTimer); showScreen('title'); showBest(); }
 $('start').onclick=()=>startGame();
 $('quit').onclick=quitGame;
 $('again').onclick=()=>startGame();
@@ -470,12 +591,12 @@ function resolveRow(r, lane, now){
     score += {perfect:1000,great:700,good:400}[g] + Math.min(combo,10)*30;
     r.result='ok';
     judgeFx={t:now,text:g.toUpperCase()+'!',color:{perfect:'#fff27a',great:'#69db7c',good:'#4dd0e1'}[g]};
-    bursts.push({lane,t:now,color:'#fff'}); seOk(g);
+    bursts.push({lane,t:now,color:'#fff'}); seOk(g); mascotReact(g,combo);
   } else {
     combo=0; r.result='ng'; r.q.miss=true;
     judgeFx={t:now,text:lane<0?'TIME UP':'MISS…',color:'#ff6b6b'};
     if(lane>=0) bursts.push({lane,t:now,color:'#ff6b6b'});
-    seNg();
+    seNg(); mascotReact('miss',0);
   }
   if(slotsQ===r.q) renderSlots(r.q);
   if(r.q.rows.every(x=>x.done)){
@@ -500,6 +621,8 @@ function finish(){
   const rank = acc===100?'S':acc>=90?'A':acc>=70?'B':'C';
   $('rank').textContent=rank;
   $('rmsg').textContent = {S:'全問ノーミス！ぜんぶ覚えたね🎉',A:'すごい！ほぼ完ぺき！',B:'いい調子！復習してもう一回！',C:'まずは「ヒントあり」で覚えよう！'}[rank];
+  setMascotExpr(mResultSvg, rank==='S'?'excited':rank==='C'?'normal':'happy', rank==='S');
+  $('mResultMsg').textContent = M_RESULT[rank];
   $('rScore').textContent=score; $('rAcc').textContent=acc+'%'; $('rCombo').textContent=maxCombo;
   const rv=$('review');
   rv.innerHTML = mistakes.length ? '<h3>📝 まちがえた問題の復習</h3>' : '';
