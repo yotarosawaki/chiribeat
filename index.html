@@ -35,6 +35,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 .ghost{background:var(--card);border:0;border-radius:12px;padding:12px 22px;font-size:16px}
 .howto{background:var(--card);border-radius:12px;padding:10px 14px;font-size:13px;line-height:1.7;text-align:left;color:#dfe4ff}
 #best{font-size:13px;color:var(--sub)}
+.group input[type=text],.group input[type=number]{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.15);
+  color:var(--ink);border-radius:10px;padding:9px 11px;font-size:14px;font-family:inherit}
+.group input[type=text]{width:100%}
+.group input[type=number]{width:64px}
+.ytRow{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;font-size:13px;color:var(--sub);align-items:center}
+#ytMsg{font-size:12px;margin-top:4px;min-height:16px}
+#ytMsg.ng{color:#ffa8a8}
+#ytMsg.ok{color:var(--ok)}
 
 /* game */
 #game{padding:0}
@@ -100,11 +108,21 @@ canvas{flex:1;min-height:0;width:100%;display:block;touch-action:none}
         <button class="chip" data-v="15">15問</button>
       </div></div>
 
+    <div class="group"><h3>好きな曲でプレイ（任意）</h3>
+      <input id="ytUrl" type="text" placeholder="YouTubeのURLを貼り付け（空ならゲーム内蔵のBGM）">
+      <div class="ytRow">
+        <label>開始位置 <input id="ytOffset" type="number" value="0" min="0"> 秒</label>
+        <label>テンポ <input id="ytBpm" type="number" value="100" min="40" max="200"> BPM</label>
+      </div>
+      <div id="ytMsg"></div>
+    </div>
+
     <div class="howto">
       🎵 問題が出たら、<b>答えの文字が1拍ずつ</b>落ちてきます。<br>
       4つのレーンのうち<b>正しい文字</b>を、ラインに重なる瞬間にたたこう！<br>
       例）与那国島 → <b>よ・な・ぐ・に・じ・ま</b><br>
-      操作：<b>D F J K</b>（または 1 2 3 4）／ スマホはレーンをタップ
+      操作：<b>D F J K</b>（または 1 2 3 4）／ スマホはレーンをタップ<br>
+      曲を指定すると、内蔵BGMの代わりにその曲（YouTube本体を再生）が流れます。ノーツは曲に自動で合わないので、テンポの数字を耳で合わせてね。自分が使ってよい曲・個人の練習用にどうぞ。
     </div>
     <button class="big" id="start">スタート</button>
     <div id="best"></div>
@@ -329,7 +347,58 @@ function seNg(){
   g.gain.setValueAtTime(0.22,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.32);
   o.connect(g); g.connect(master); o.start(t); o.stop(t+0.35);
 }
-$('mute').onclick=()=>{ muted=!muted; $('mute').textContent=muted?'🔇':'🔊'; if(master) master.gain.value=muted?0:0.55; };
+$('mute').onclick=()=>{
+  muted=!muted; $('mute').textContent=muted?'🔇':'🔊'; if(master) master.gain.value=muted?0:0.55;
+  if(ytPlayer){ try{ muted?ytPlayer.mute():ytPlayer.unMute(); }catch(e){} }
+};
+
+/* ============ YouTubeで好きな曲を流す ============ */
+let ytPlayer=null, ytReady=false;
+function extractYouTubeId(url){
+  const m = (url||'').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/))([\w-]{11})/);
+  return m ? m[1] : null;
+}
+function ensureYT(){
+  if(window.YT && window.YT.Player){ createYTPlayer(); return; }
+  if(!document.getElementById('ytapi')){
+    const s=document.createElement('script'); s.id='ytapi'; s.src='https://www.youtube.com/iframe_api';
+    document.head.appendChild(s);
+  }
+  window.onYouTubeIframeAPIReady = createYTPlayer;
+}
+function createYTPlayer(){
+  const host=document.createElement('div'); host.id='ytHost';
+  host.style.cssText='position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;';
+  document.body.appendChild(host);
+  ytPlayer = new YT.Player('ytHost', {
+    height:'1', width:'1',
+    playerVars:{controls:0, disablekb:1, modestbranding:1, playsinline:1, origin:location.origin},
+    events:{ onReady:()=>{ ytReady=true; } }
+  });
+}
+ensureYT();
+function playYouTube(id, offset){
+  const go=()=>{
+    try{
+      ytPlayer.loadVideoById({videoId:id, startSeconds:offset});
+      ytPlayer.setVolume(70);
+      muted ? ytPlayer.mute() : ytPlayer.unMute();
+      ytPlayer.playVideo();
+    }catch(e){}
+  };
+  if(ytPlayer && ytReady) go();
+  else {
+    let tries=0;
+    const iv=setInterval(()=>{ tries++; if(ytPlayer&&ytReady){ clearInterval(iv); go(); } else if(tries>50) clearInterval(iv); },100);
+  }
+}
+function stopYouTube(){ if(ytPlayer){ try{ ytPlayer.pauseVideo(); }catch(e){} } }
+$('ytUrl').addEventListener('input',()=>{
+  const v=$('ytUrl').value.trim(), msg=$('ytMsg');
+  if(!v){ msg.textContent=''; msg.className=''; return; }
+  if(extractYouTubeId(v)){ msg.textContent='✓ この曲でプレイします（ゲーム内蔵BGMの代わりに再生）'; msg.className='ok'; }
+  else { msg.textContent='URLを認識できませんでした。内蔵BGMで再生します。'; msg.className='ng'; }
+});
 
 /* ============ ゲーム進行 ============ */
 function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
@@ -341,7 +410,9 @@ function startGame(pool){
     shuffle(pool); pool = pool.slice(0,opt.n);
   }
   lastPool = pool;
-  beat = 60/opt.bpm; fall = beat*4; winR = Math.min(0.3, beat*0.5);
+  const ytId = extractYouTubeId($('ytUrl').value.trim());
+  const ytBpm = Math.max(40, Math.min(200, Number($('ytBpm').value)||100));
+  beat = 60/(ytId ? ytBpm : opt.bpm); fall = beat*4; winR = Math.min(0.3, beat*0.5);
   start = ac.currentTime + 1.2;
   qs=[]; rows=[];
   let T = start + 4*beat;                       // 最初の1文字目がラインに届く時刻
@@ -364,10 +435,11 @@ function startGame(pool){
   $('score').textContent='0'; $('combo').textContent='';
   showScreen('game'); resize();
   master.gain.cancelScheduledValues(ac.currentTime); master.gain.value=muted?0:0.55;
-  startMusic(start);
+  if(ytId) playYouTube(ytId, Math.max(0, Number($('ytOffset').value)||0));
+  else startMusic(start);
   running=true; requestAnimationFrame(frame);
 }
-function quitGame(){ running=false; stopMusic(); showScreen('title'); showBest(); }
+function quitGame(){ running=false; stopMusic(); stopYouTube(); showScreen('title'); showBest(); }
 $('start').onclick=()=>startGame();
 $('quit').onclick=quitGame;
 $('again').onclick=()=>startGame();
@@ -421,7 +493,7 @@ function judge(lane, now){
 }
 
 function finish(){
-  running=false; stopMusic();
+  running=false; stopMusic(); stopYouTube();
   const acc=Math.round(okRows/totalRows*100);
   let best=0; try{ best=+localStorage.getItem('chiribeat_best2')||0; if(score>best){localStorage.setItem('chiribeat_best2',score);} }catch(e){}
   const rank = acc===100?'S':acc>=90?'A':acc>=70?'B':'C';
