@@ -70,7 +70,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 #combo{color:var(--l2);min-width:88px;text-align:center}
 #quit{background:var(--card);border:0;border-radius:8px;padding:4px 10px;font-size:12px;color:var(--sub)}
 #mute{background:var(--card);border:0;border-radius:8px;padding:4px 8px;font-size:14px}
-#ytUnlock{display:none;background:#fff27a;color:#3a2b45;border:0;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700}
+#ytUnlock{display:none;position:relative;width:132px;height:26px}
+#ytUnlock span{position:absolute;inset:0;background:#fff27a;color:#3a2b45;border-radius:8px;font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;pointer-events:none;white-space:nowrap}
 #qbox{margin:2px 12px 0;background:var(--card);border-radius:14px;padding:8px 14px;min-height:68px;border-left:5px solid var(--accent)}
 #qcat{font-size:11px;color:var(--accent);margin-bottom:2px}
 #qtext{font-size:clamp(16px,4.6vw,20px);font-weight:700;line-height:1.4}
@@ -159,7 +161,7 @@ canvas{flex:1;min-height:0;width:100%;display:block;touch-action:none}
       <div id="combo"></div>
       <div>Q <b id="prog">1/10</b></div>
       <button id="mute" title="音">🔊</button>
-      <button id="ytUnlock" title="音を再生">🔈 音を再生</button>
+      <div id="ytUnlock"><span>🔈 タップして音を再生</span></div>
       <button id="quit">やめる</button>
     </div>
     <div id="qbox"><div id="qcat"></div><div id="qtext"></div></div>
@@ -489,18 +491,48 @@ function ensureYT(){
   }
   window.onYouTubeIframeAPIReady = createYTPlayer;
 }
+const YT_HIDDEN_STYLE='position:fixed;right:0;bottom:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1;overflow:hidden;';
 function createYTPlayer(){
   const host=document.createElement('div'); host.id='ytHost';
   // ビューポート内・ほぼ透明に置く（画面外に置くとAndroidなどで再生が止められることがあるため）
-  host.style.cssText='position:fixed;right:0;bottom:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1;overflow:hidden;';
+  host.style.cssText=YT_HIDDEN_STYLE;
   document.body.appendChild(host);
   ytPlayer = new YT.Player('ytHost', {
     height:'2', width:'2',
     playerVars:{controls:0, disablekb:1, modestbranding:1, playsinline:1, origin:location.origin},
-    events:{ onReady:()=>{ ytReady=true; } }
+    events:{ onReady:()=>{ ytReady=true; }, onError:(e)=>{ ytError(e.data); } }
   });
 }
+function ytError(code){
+  // 101/150: 動画の投稿者が埋め込み再生を許可していない（アーティスト公式動画などでよくある）
+  const embedBlocked = code===101 || code===150;
+  const msg = embedBlocked
+    ? 'この動画は埋め込み再生が許可されていません。別のYouTube動画のURLで試してね。'
+    : '動画を再生できませんでした。別のYouTube動画のURLで試してね。';
+  $('ytUnlock').style.display='none'; ytHostHide();
+  if(running){
+    if(mGameSvg){ setMascotExpr(mGameSvg,'sad',false); }
+    $('mGameMsg').textContent = msg;
+    if(!musicTimer) startMusic(ac.currentTime+0.05); // 内蔵BGMにフォールバック
+  } else {
+    const m=$('ytMsg'); if(m){ m.textContent='⚠ '+msg; m.className='ng'; }
+  }
+}
 ensureYT();
+// スマホのブラウザは、JS経由（postMessage）で呼んだ再生だと「本人が操作していない」と見なし、
+// 音声つきの自動再生をブロックすることがある。そこで、隠しているプレイヤーの実体（iframe）を
+// 「🔈 タップして音を再生」の表示の真上に重ねておき、その場所を直接タップしてもらうことで、
+// ブラウザから見て「そのYouTube動画に本人が直接ふれた」状態を作ってから再生を試みる。
+function ytHostShowAt(wrap){
+  const host=document.getElementById('ytHost'); if(!host) return;
+  host.style.cssText='position:absolute;inset:0;width:100%;height:100%;opacity:0;pointer-events:auto;z-index:5;overflow:hidden;';
+  wrap.appendChild(host);
+}
+function ytHostHide(){
+  const host=document.getElementById('ytHost'); if(!host) return;
+  document.body.appendChild(host);
+  host.style.cssText=YT_HIDDEN_STYLE;
+}
 function playYouTube(id, offset){
   const go=()=>{
     try{
@@ -513,7 +545,7 @@ function playYouTube(id, offset){
     setTimeout(()=>{
       try{
         const st = ytPlayer.getPlayerState();
-        if(running && st!==1 && st!==3) $('ytUnlock').style.display='inline-block';
+        if(running && st!==1 && st!==3){ ytHostShowAt($('ytUnlock')); $('ytUnlock').style.display='block'; }
       }catch(e){}
     },900);
   };
@@ -523,12 +555,18 @@ function playYouTube(id, offset){
     const iv=setInterval(()=>{ tries++; if(ytPlayer&&ytReady){ clearInterval(iv); go(); } else if(tries>50) clearInterval(iv); },100);
   }
 }
-function stopYouTube(){ if(ytPlayer){ try{ ytPlayer.pauseVideo(); }catch(e){} } $('ytUnlock').style.display='none'; }
-$('ytUnlock').onclick=()=>{
+function stopYouTube(){
+  if(ytPlayer){ try{ ytPlayer.pauseVideo(); }catch(e){} }
+  $('ytUnlock').style.display='none'; ytHostHide();
+}
+// 動画（iframe）自体への直接タップをここで受け取り、そのまま再生を試みる
+$('ytUnlock').addEventListener('click',()=>{
   if(!ytPlayer) return;
   try{ muted ? ytPlayer.mute() : ytPlayer.unMute(); ytPlayer.playVideo(); }catch(e){}
-  $('ytUnlock').style.display='none';
-};
+  setTimeout(()=>{
+    $('ytUnlock').style.display='none'; ytHostHide();
+  },300);
+});
 $('ytUrl').addEventListener('input',()=>{
   const v=$('ytUrl').value.trim(), msg=$('ytMsg'), id=extractYouTubeId(v);
   if(!v){ msg.textContent=''; msg.className=''; return; }
@@ -572,7 +610,7 @@ function startGame(pool){
   $('fb').textContent=''; $('fb').className=''; $('slots').innerHTML='';
   $('score').textContent='0'; $('combo').textContent='';
   clearTimeout(mascotTimer); setMascotExpr(mGameSvg,'normal',false); $('mGameMsg').textContent='';
-  $('ytUnlock').style.display='none';
+  $('ytUnlock').style.display='none'; ytHostHide();
   showScreen('game'); resize();
   master.gain.cancelScheduledValues(ac.currentTime); master.gain.value=muted?0:0.55;
   if(ytId) playYouTube(ytId, Math.max(0, Number($('ytOffset').value)||0));
